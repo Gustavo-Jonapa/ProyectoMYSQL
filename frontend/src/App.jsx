@@ -13,14 +13,19 @@ export default function MySQLInterface() {
   const textareaRef = useRef(null);
 
   const API_URL = 'http://localhost:5000/api';
-
+  
   const templates = {
-    createDb: 'CREATE DATABASE ',
-    use: 'USE ',
-    createTable: 'CREATE TABLE ',
-    insert: 'INSERT ',
-    update: 'UPDATE ',
-    delete: 'DELETE '
+    createDb: 'CREATE DATABASE mi_base_datos;',
+    use: 'USE mi_base_datos;',
+    createTable: `CREATE TABLE usuarios (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  nombre VARCHAR(100) NOT NULL,
+  email VARCHAR(100),
+  fecha_registro DATE
+);`,
+    insert: "INSERT INTO usuarios (nombre, email, fecha_registro) VALUES ('Juan Pérez', 'juan@email.com', '2025-10-26');",
+    update: "UPDATE usuarios SET email = 'nuevo@email.com' WHERE id = 1;",
+    delete: "DELETE FROM usuarios WHERE id = 1;"
   };
 
   useEffect(() => {
@@ -127,6 +132,11 @@ export default function MySQLInterface() {
         fetchDatabases();
       }
 
+      if (query.toUpperCase().includes('DROP DATABASE')) {
+        fetchDatabases();
+        checkHealth(); // Actualizar el estado de la base de datos activa
+      }
+
       if (query.toUpperCase().startsWith('USE')) {
         checkHealth();
       }
@@ -160,7 +170,6 @@ export default function MySQLInterface() {
           <div className="header-content">
             <div>
               <h1 className="title">Bases de datos MySQL</h1>
-              <img src="https://www.pngplay.com/wp-content/uploads/7/Mysql-Logo-PNG-HD-Quality.png" alt=""className='imagen'/>
             </div>
             {currentDb && (
               <div className="current-db">
@@ -262,7 +271,6 @@ export default function MySQLInterface() {
                 
                 <div className={`result-box ${result.success ? 'success' : 'error'}`}>
                   <p className="result-message">{result.message}</p>
-                  
 
                   {result.data && result.data.length > 0 && (
                     <div className="table-container">

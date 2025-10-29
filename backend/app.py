@@ -18,6 +18,7 @@ MYSQL_CONFIG = {
 current_database = None
 
 def get_connection(database=None):
+    """Crea conexión a MySQL"""
     try:
         config = MYSQL_CONFIG.copy()
         if database:
@@ -29,6 +30,7 @@ def get_connection(database=None):
         raise Exception(f"No se encontró la base de datos especificada")
 
 def execute_query(query, database=None):
+    """Ejecuta una consulta SQL"""
     connection = None
     try:
         connection = get_connection(database)
@@ -66,6 +68,9 @@ def execute_query(query, database=None):
 
 @app.route('/api/analyze', methods=['POST'])
 def analyze_command():
+    """
+    Analiza léxica y sintácticamente un comando SQL
+    """
     data = request.json
     sql_command = data.get('query', '')
     
@@ -84,6 +89,9 @@ def analyze_command():
 
 @app.route('/api/execute', methods=['POST'])
 def execute_command():
+    """
+    Ejecuta un comando SQL después de validarlo
+    """
     global current_database
     
     data = request.json
@@ -96,8 +104,10 @@ def execute_command():
         }), 400
     
     try:
+        # Primero analizar el comando
         analysis = analyze_sql(sql_command)
         
+        # Si hay errores sintácticos, no ejecutar
         if not analysis['syntactic']['valid']:
             return jsonify({
                 'success': False,
@@ -106,13 +116,25 @@ def execute_command():
                 'message': analysis['syntactic']['message']
             })
         
+        # Detectar si es un comando USE para actualizar la base de datos actual
         if sql_command.upper().startswith('USE'):
             match = re.search(r'USE\s+(\w+)', sql_command, re.IGNORECASE)
             if match:
                 current_database = match.group(1)
         
+        # Detectar DROP DATABASE para limpiar la base de datos actual
+        if sql_command.upper().startswith('DROP DATABASE'):
+            match = re.search(r'DROP\s+DATABASE\s+(\w+)', sql_command, re.IGNORECASE)
+            if match:
+                dropped_db = match.group(1)
+                # Si se elimina la base de datos actual, limpiarla
+                if current_database and current_database.upper() == dropped_db.upper():
+                    current_database = None
+        
+        # Ejecutar el comando
         result = execute_query(sql_command, current_database)
         
+        # Agregar análisis al resultado
         result['analysis'] = analysis
         
         return jsonify(result)
@@ -126,17 +148,23 @@ def execute_command():
 
 @app.route('/api/autocomplete', methods=['POST'])
 def autocomplete():
+    """
+    Proporciona sugerencias de autocompletado para comandos SQL
+    """
     data = request.json
     partial_query = data.get('query', '').upper()
     
+    # Palabras clave de MySQL
     keywords = [
         'CREATE DATABASE', 'CREATE TABLE', 'USE', 
         'INSERT INTO', 'VALUES', 'UPDATE', 'SET', 
-        'DELETE FROM', 'WHERE', 'SELECT', 'FROM',
+        'DELETE FROM', 'DROP DATABASE', 'DROP TABLE',
+        'SELECT', 'SELECT * FROM', 'FROM', 'WHERE',
         'INT', 'VARCHAR', 'TEXT', 'DATE', 'FLOAT',
         'PRIMARY KEY', 'NOT NULL', 'AUTO_INCREMENT'
     ]
     
+    # Filtrar sugerencias que coincidan
     suggestions = [kw for kw in keywords if kw.startswith(partial_query)]
     
     return jsonify({
@@ -145,6 +173,9 @@ def autocomplete():
 
 @app.route('/api/databases', methods=['GET'])
 def list_databases():
+    """
+    Lista todas las bases de datos disponibles
+    """
     try:
         result = execute_query("SHOW DATABASES")
         if result['success']:
@@ -162,6 +193,9 @@ def list_databases():
 
 @app.route('/api/tables', methods=['GET'])
 def list_tables():
+    """
+    Lista todas las tablas de la base de datos actual
+    """
     global current_database
     
     if not current_database:
@@ -188,6 +222,9 @@ def list_tables():
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
+    """
+    Verifica el estado del servidor y la conexión a MySQL
+    """
     try:
         connection = get_connection()
         connection.close()

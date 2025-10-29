@@ -74,6 +74,10 @@ class Parser:
             return self.parse_update()
         elif token.type == TokenType.DELETE:
             return self.parse_delete()
+        elif token.type == TokenType.DROP:
+            return self.parse_drop()
+        elif token.type == TokenType.SELECT:
+            return self.parse_select()
         else:
             raise ParseError(
                 f"Comando no reconocido: {token.value}",
@@ -179,6 +183,42 @@ class Parser:
             self.parse_condition()
         
         return "DELETE"
+    
+    def parse_drop(self):
+        """DROP DATABASE nombre;"""
+        self.expect(TokenType.DROP)
+        
+        if self.match(TokenType.DATABASE):
+            self.expect(TokenType.DATABASE)
+            self.expect(TokenType.IDENTIFIER)
+            return "DROP_DATABASE"
+        elif self.match(TokenType.TABLE):
+            self.expect(TokenType.TABLE)
+            self.expect(TokenType.IDENTIFIER)
+            return "DROP_TABLE"
+        else:
+            raise ParseError(
+                "Después de DROP se esperaba DATABASE o TABLE",
+                self.current_token().position
+            )
+    
+    def parse_select(self):
+        """SELECT * FROM tabla WHERE condicion;"""
+        self.expect(TokenType.SELECT)
+        
+        if self.match(TokenType.ASTERISK):
+            self.advance()
+        else:
+            self.parse_identifier_list()
+        
+        self.expect(TokenType.FROM)
+        self.expect(TokenType.IDENTIFIER)
+        
+        if self.match(TokenType.WHERE):
+            self.advance()
+            self.parse_condition()
+        
+        return "SELECT"
     
     def parse_identifier_list(self):
         self.expect(TokenType.IDENTIFIER)

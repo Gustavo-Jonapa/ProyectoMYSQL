@@ -12,6 +12,8 @@ class TokenType(Enum):
     UPDATE = "UPDATE"
     SET = "SET"
     DELETE = "DELETE"
+    DROP = "DROP"
+    SELECT = "SELECT"
     FROM = "FROM"
     WHERE = "WHERE"
     
@@ -55,7 +57,7 @@ class Lexer:
         
         self.keywords = {
             'CREATE', 'DATABASE', 'TABLE', 'USE', 'INSERT', 'INTO',
-            'VALUES', 'UPDATE', 'SET', 'DELETE', 'FROM', 'WHERE',
+            'VALUES', 'UPDATE', 'SET', 'DELETE', 'DROP', 'SELECT', 'FROM', 'WHERE',
             'INT', 'VARCHAR', 'TEXT', 'DATE', 'FLOAT', 'BOOLEAN',
             'PRIMARY', 'KEY', 'NOT', 'NULL', 'AUTO_INCREMENT'
         }
@@ -166,4 +168,4 @@ class Lexer:
                 'position': token.position
             }
             for token in self.tokens if token.type != TokenType.EOF
-        ] 
+        ]

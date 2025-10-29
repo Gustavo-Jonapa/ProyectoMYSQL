@@ -59,8 +59,6 @@ body {
   border: 2px solid #22c55e;
   padding: 12px 16px;
   border-radius: 8px;
-  position: absolute;
-  top: 300px;
 }
 
 .current-db p {
